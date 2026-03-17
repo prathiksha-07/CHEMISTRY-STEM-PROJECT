@@ -1,546 +1,56 @@
-<!--
-<!DOCTYPE html>
-<html>
+﻿<!DOCTYPE html>
+<html lang="en">
 
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>💧 Smart Water Quality Monitor</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <style>
     body {
-      font-family: Arial;
-      text-align: center;
-      padding: 20px;
-      background-color: #f0f8ff;
-    }
-
-    h1 {
-      font-size: 2.5em;
-      color: #0077b6;
-    }
-
-    #status {
-      font-size: 2em;
-      margin-top: 20px;
-      padding: 20px;
-      width: 350px;
-      margin-left: auto;
-      margin-right: auto;
-      border-radius: 15px;
-      background-color: lightgray;
-      color: black;
-      transition: background-color 0.5s, opacity 0.5s;
-    }
-
-    .safe {
-      background-color: #4CAF50;
-      color: white;
-    }
-
-    .unsafe {
-      background-color: #E63946;
-      color: white;
-    }
-
-    table {
-      margin: 20px auto;
-      border-collapse: collapse;
-      font-size: 1.2em;
-    }
-
-    td,
-    th {
-      border: 1px solid #0077b6;
-      padding: 8px 12px;
-      border-radius: 5px;
-      transition: background-color 0.5s;
-    }
-
-    th {
-      background-color: #0077b6;
-      color: white;
-    }
-
-    canvas {
-      margin-top: 30px;
-      max-width: 90%;
-    }
-  </style>
-</head>
-
-<body>
-  <h1>💧 Smart Water Quality Monitor</h1>
-  <div id="status">Waiting for data...</div>
-
-  <table>
-    <tr>
-      <th>Parameter</th>
-      <th>Value</th>
-    </tr>
-    <tr>
-      <td>Turbidity (NTU)</td>
-      <td id="turbidity">--</td>
-    </tr>
-    <tr>
-      <td>pH</td>
-      <td id="ph">--</td>
-    </tr>
-    <tr>
-      <td>TDS (ppm)</td>
-      <td id="tds">--</td>
-    </tr>
-    <tr>
-      <td>Temperature (°C)</td>
-      <td id="temperature">--</td>
-    </tr>
-  </table>-->
-
-<!-- Graphs 
-  <canvas id="chartTurbidity"></canvas>
-  <canvas id="chartPH"></canvas>
-  <canvas id="chartTDS"></canvas>
-  <canvas id="chartTemp"></canvas>
-
-  <script>
-    const maxDataPoints = 20;
-    const labels = Array(maxDataPoints).fill('');
-    const turbidityData = Array(maxDataPoints).fill(0);
-    const phData = Array(maxDataPoints).fill(7);
-    const tdsData = Array(maxDataPoints).fill(0);
-    const tempData = Array(maxDataPoints).fill(25);
-
-    // Alerts setup
-    let alertActive = false;
-    const alertSound = new Audio('https://www.soundjay.com/buttons/sounds/beep-07.mp3');
-
-    // Function to get color for charts
-    function getColor(parameter, value) {
-      if (parameter === "turbidity") {
-        if (value <= 100) return 'green';
-        if (value <= 200) return 'yellow';
-        return 'red';
-      }
-      if (parameter === "ph") {
-        if (value >= 6.5 && value <= 8.5) return 'green';
-        if (value >= 6 && value < 6.5 || value > 8.5 && value <= 9) return 'yellow';
-        return 'red';
-      }
-      if (parameter === "tds") {
-        if (value <= 500) return 'green';
-        if (value <= 800) return 'yellow';
-        return 'red';
-      }
-      if (parameter === "temperature") {
-        if (value >= 20 && value <= 30) return 'green';
-        if (value >= 31 && value <= 35) return 'yellow';
-        return 'red';
-      }
-      return 'gray';
-    }
-
-    const chartTurbidity = new Chart(document.getElementById('chartTurbidity'), {
-      type: 'line',
-      data: { labels, datasets: [{ label: 'Turbidity (NTU)', data: turbidityData, borderColor: 'green', fill: false }] },
-      options: { animation: false, scales: { y: { beginAtZero: true } } }
-    });
-    const chartPH = new Chart(document.getElementById('chartPH'), {
-      type: 'line',
-      data: { labels, datasets: [{ label: 'pH', data: phData, borderColor: 'green', fill: false }] },
-      options: { animation: false, scales: { y: { min: 0, max: 14 } } }
-    });
-    const chartTDS = new Chart(document.getElementById('chartTDS'), {
-      type: 'line',
-      data: { labels, datasets: [{ label: 'TDS (ppm)', data: tdsData, borderColor: 'green', fill: false }] },
-      options: { animation: false, scales: { y: { beginAtZero: true } } }
-    });
-    const chartTemp = new Chart(document.getElementById('chartTemp'), {
-      type: 'line',
-      data: { labels, datasets: [{ label: 'Temperature (°C)', data: tempData, borderColor: 'green', fill: false }] },
-      options: { animation: false, scales: { y: { beginAtZero: true } } }
-    });
-
-    async function fetchStatus() {
-      try {
-        const response = await fetch('http://127.0.0.1:5000/status');
-        const data = await response.json();
-
-        // Update table values
-        document.getElementById('turbidity').innerText = data.turbidity.toFixed(1);
-        document.getElementById('ph').innerText = data.ph.toFixed(1);
-        document.getElementById('tds').innerText = data.tds.toFixed(1);
-        document.getElementById('temperature').innerText = data.temperature.toFixed(1);
-
-        const statusDiv = document.getElementById('status');
-        statusDiv.innerText = "Water Status: " + data.status;
-        if (data.status === "Safe") statusDiv.className = "safe";
-        else if (data.status === "Unsafe") statusDiv.className = "unsafe";
-        else statusDiv.className = "";
-
-        function pushData(arr, value) { arr.push(value); if (arr.length > maxDataPoints) arr.shift(); }
-        pushData(labels, new Date().toLocaleTimeString());
-        pushData(turbidityData, data.turbidity);
-        pushData(phData, data.ph);
-        pushData(tdsData, data.tds);
-        pushData(tempData, data.temperature);
-
-        chartTurbidity.data.datasets[0].borderColor = getColor("turbidity", data.turbidity);
-        chartPH.data.datasets[0].borderColor = getColor("ph", data.ph);
-        chartTDS.data.datasets[0].borderColor = getColor("tds", data.tds);
-        chartTemp.data.datasets[0].borderColor = getColor("temperature", data.temperature);
-
-        chartTurbidity.update();
-        chartPH.update();
-        chartTDS.update();
-        chartTemp.update();
-
-        // --- Multi-Parameter Alerts & Highlight ---
-        const parameters = ["turbidity", "ph", "tds", "temperature"];
-        const thresholds = {
-          turbidity: { safe: 100, caution: 200 },
-          ph: { safeLow: 6.5, safeHigh: 8.5, cautionLow: 6, cautionHigh: 9 },
-          tds: { safe: 500, caution: 800 },
-          temperature: { safeLow: 20, safeHigh: 30, cautionLow: 31, cautionHigh: 35 }
-        };
-
-        parameters.forEach(param => {
-          const cell = document.getElementById(param);
-          let value = data[param];
-          let unsafe = false;
-
-          if (param === "turbidity") {
-            if (value > thresholds.turbidity.caution) unsafe = true;
-          } else if (param === "ph") {
-            if (value < thresholds.ph.safeLow || value > thresholds.ph.safeHigh) unsafe = true;
-          } else if (param === "tds") {
-            if (value > thresholds.tds.caution) unsafe = true;
-          } else if (param === "temperature") {
-            if (value < thresholds.temp.safeLow || value > thresholds.temp.cautionHigh) unsafe = true;
-          }
-
-          if (unsafe) {
-            cell.style.backgroundColor = "#E63946";
-            cell.style.color = "white";
-            if (!alertActive) {
-              alertActive = true;
-              alertSound.play();
-              alert(`⚠️ ${param.toUpperCase()} is in unsafe range!`);
-            }
-          } else {
-            cell.style.backgroundColor = "";
-            cell.style.color = "black";
-          }
-        });
-
-        // Reset alertActive if all safe
-        if (data.status === "Safe") alertActive = false;
-
-      } catch (err) {
-        const statusDiv = document.getElementById('status');
-        statusDiv.innerText = "Error connecting to server";
-        statusDiv.className = "";
-        console.error(err);
-      }
-    }
-
-    setInterval(fetchStatus, 2000);
-  </script>
-</body>
-
-</html>
-
-
-<!DOCTYPE html>
-<html>
-
-<head>
-  <title>💧 Smart Water Quality Monitor</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body {
-      font-family: Arial;
-      text-align: center;
-      padding: 20px;
-      background-color: #f0f8ff;
-    }
-
-    h1 {
-      font-size: 2.5em;
-      color: #0077b6;
-    }
-
-    #status {
-      font-size: 2em;
-      margin-top: 20px;
-      padding: 20px;
-      width: 350px;
-      margin-left: auto;
-      margin-right: auto;
-      border-radius: 15px;
-      background-color: lightgray;
-      color: black;
-      transition: background-color 0.5s, opacity 0.5s;
-    }
-
-    .safe {
-      background-color: #4CAF50;
-      color: white;
-    }
-
-    .unsafe {
-      background-color: #E63946;
-      color: white;
-    }
-
-    table {
-      margin: 20px auto;
-      border-collapse: collapse;
-      font-size: 1.2em;
-    }
-
-    td,
-    th {
-      border: 1px solid #0077b6;
-      padding: 8px 12px;
-      border-radius: 5px;
-      transition: background-color 0.5s;
-    }
-
-    th {
-      background-color: #0077b6;
-      color: white;
-    }
-
-    canvas {
-      margin-top: 30px;
-      max-width: 90%;
-    }
-  </style>
-</head>
-
-<body>
-  <h1>💧 Smart Water Quality Monitor</h1>
-  <div id="status">Waiting for data...</div>
-
-  <table>
-    <tr>
-      <th>Parameter</th>
-      <th>Value</th>
-    </tr>
-    <tr>
-      <td>Turbidity (NTU)</td>
-      <td id="turbidity">--</td>
-    </tr>
-    <tr>
-      <td>pH</td>
-      <td id="ph">--</td>
-    </tr>
-    <tr>
-      <td>TDS (ppm)</td>
-      <td id="tds">--</td>
-    </tr>
-    <tr>
-      <td>Temperature (°C)</td>
-      <td id="temperature">--</td>
-    </tr> <!-- Fixed ID -->
-</table>
-
-<!-- Graphs 
-  <canvas id="chartTurbidity"></canvas>
-  <canvas id="chartPH"></canvas>
-  <canvas id="chartTDS"></canvas>
-  <canvas id="chartTemp"></canvas>
-
-  <script>
-    const maxDataPoints = 20;
-    const labels = Array(maxDataPoints).fill('');
-    const turbidityData = Array(maxDataPoints).fill(0);
-    const phData = Array(maxDataPoints).fill(7);
-    const tdsData = Array(maxDataPoints).fill(0);
-    const tempData = Array(maxDataPoints).fill(25);
-
-    let alertActive = false;
-    const alertSound = new Audio('https://www.soundjay.com/buttons/sounds/beep-07.mp3');
-
-    function getColor(parameter, value) {
-      if (parameter === "turbidity") {
-        if (value <= 100) return 'green';
-        if (value <= 200) return 'yellow';
-        return 'red';
-      }
-      if (parameter === "ph") {
-        if (value >= 6.5 && value <= 8.5) return 'green';
-        if ((value >= 6 && value < 6.5) || (value > 8.5 && value <= 9)) return 'yellow';
-        return 'red';
-      }
-      if (parameter === "tds") {
-        if (value <= 500) return 'green';
-        if (value <= 800) return 'yellow';
-        return 'red';
-      }
-      if (parameter === "temperature") {
-        if (value >= 20 && value <= 30) return 'green';
-        if (value >= 31 && value <= 35) return 'yellow';
-        return 'red';
-      }
-      return 'gray';
-    }
-
-    const chartTurbidity = new Chart(document.getElementById('chartTurbidity'), {
-      type: 'line',
-      data: { labels, datasets: [{ label: 'Turbidity (NTU)', data: turbidityData, borderColor: 'green', fill: false }] },
-      options: { animation: false, scales: { y: { beginAtZero: true } } }
-    });
-
-    const chartPH = new Chart(document.getElementById('chartPH'), {
-      type: 'line',
-      data: { labels, datasets: [{ label: 'pH', data: phData, borderColor: 'green', fill: false }] },
-      options: { animation: false, scales: { y: { min: 0, max: 14 } } }
-    });
-
-    const chartTDS = new Chart(document.getElementById('chartTDS'), {
-      type: 'line',
-      data: { labels, datasets: [{ label: 'TDS (ppm)', data: tdsData, borderColor: 'green', fill: false }] },
-      options: { animation: false, scales: { y: { beginAtZero: true } } }
-    });
-
-    const chartTemp = new Chart(document.getElementById('chartTemp'), {
-      type: 'line',
-      data: { labels, datasets: [{ label: 'Temperature (°C)', data: tempData, borderColor: 'green', fill: false }] },
-      options: { animation: false, scales: { y: { beginAtZero: true } } }
-    });
-
-    async function fetchStatus() {
-      try {
-        const response = await fetch('http://127.0.0.1:5000/status');
-        const data = await response.json();
-
-        // Debug: check backend response
-        console.log("Backend Data:", data);
-
-        // Update table values
-        document.getElementById('turbidity').innerText = parseFloat(data.turbidity).toFixed(1);
-        document.getElementById('ph').innerText = parseFloat(data.ph).toFixed(1);
-        document.getElementById('tds').innerText = parseFloat(data.tds).toFixed(1);
-        document.getElementById('temperature').innerText = parseFloat(data.temperature).toFixed(1);
-
-        // Status
-        const statusDiv = document.getElementById('status');
-        statusDiv.innerText = "Water Status: " + data.status;
-        statusDiv.className = data.status === "Safe" ? "safe" : data.status === "Unsafe" ? "unsafe" : "";
-
-        // Push chart data
-        function pushData(arr, value) { arr.push(value); if (arr.length > maxDataPoints) arr.shift(); }
-        pushData(labels, new Date().toLocaleTimeString());
-        pushData(turbidityData, data.turbidity);
-        pushData(phData, data.ph);
-        pushData(tdsData, data.tds);
-        pushData(tempData, data.temperature);
-
-        // Update chart colors
-        chartTurbidity.data.datasets[0].borderColor = getColor("turbidity", data.turbidity);
-        chartPH.data.datasets[0].borderColor = getColor("ph", data.ph);
-        chartTDS.data.datasets[0].borderColor = getColor("tds", data.tds);
-        chartTemp.data.datasets[0].borderColor = getColor("temperature", data.temperature);
-
-        chartTurbidity.update();
-        chartPH.update();
-        chartTDS.update();
-        chartTemp.update();
-
-        // Multi-parameter alerts
-        const parameters = ["turbidity", "ph", "tds", "temperature"];
-        const thresholds = {
-          turbidity: { safe: 100, caution: 200 },
-          ph: { safeLow: 6.5, safeHigh: 8.5, cautionLow: 6, cautionHigh: 9 },
-          tds: { safe: 500, caution: 800 },
-          temperature: { safeLow: 20, safeHigh: 30, cautionLow: 31, cautionHigh: 35 }
-        };
-
-        parameters.forEach(param => {
-          const cell = document.getElementById(param); // ID matches HTML & backend
-          let value = data[param];
-          let unsafe = false;
-
-          if (param === "turbidity" && value > thresholds.turbidity.caution) unsafe = true;
-          else if (param === "ph" && (value < thresholds.ph.safeLow || value > thresholds.ph.safeHigh)) unsafe = true;
-          else if (param === "tds" && value > thresholds.tds.caution) unsafe = true;
-          else if (param === "temperature" && (value < thresholds.temperature.safeLow || value > thresholds.temperature.cautionHigh)) unsafe = true;
-
-          if (unsafe) {
-            cell.style.backgroundColor = "#E63946";
-            cell.style.color = "white";
-            if (!alertActive) {
-              alertActive = true;
-              alertSound.play();
-              alert(`⚠️ ${param.toUpperCase()} is in unsafe range!`);
-            }
-          } else {
-            cell.style.backgroundColor = "";
-            cell.style.color = "black";
-          }
-        });
-
-        if (data.status === "Safe") alertActive = false;
-
-      } catch (err) {
-        const statusDiv = document.getElementById('status');
-        statusDiv.innerText = "Error connecting to server";
-        statusDiv.className = "";
-        console.error(err);
-      }
-    }
-
-    setInterval(fetchStatus, 2000);
-  </script>
-</body>
-
-</html>
--->
-<!DOCTYPE html>
-<html>
-
-<head>
-  <title>💧 Smart Water Quality Monitor</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <style>
-    body {
-      font-family: Arial;
+      font-family: Arial, sans-serif;
       text-align: center;
       background: #f0f8ff;
+      margin: 0;
+      padding: 20px;
     }
 
     h1 {
       color: #0077b6;
+      margin: 0 0 20px;
     }
 
     #status {
-      margin: 20px auto;
+      margin: 0 auto 20px;
       padding: 15px;
-      width: 300px;
-      border-radius: 10px;
+      width: min(90%, 360px);
+      border-radius: 12px;
       background: lightgray;
-      font-size: 20px;
+      font-size: 1.1rem;
+      font-weight: 600;
     }
 
     .safe {
-      background: green;
+      background: #4caf50;
       color: white;
     }
 
     .unsafe {
-      background: red;
+      background: #e63946;
       color: white;
     }
 
     table {
-      margin: 20px auto;
+      margin: 0 auto 20px;
       border-collapse: collapse;
+      width: min(90%, 480px);
     }
 
     td,
     th {
       border: 1px solid #0077b6;
       padding: 10px;
+      text-align: center;
     }
 
     th {
@@ -550,16 +60,22 @@
 
     canvas {
       max-width: 90%;
+      margin: 10px auto;
+      display: block;
+    }
+
+    footer {
       margin-top: 20px;
+      font-size: 0.9rem;
+      color: #555;
     }
   </style>
 </head>
 
 <body>
-
   <h1>💧 Smart Water Quality Monitor</h1>
 
-  <div id="status">Waiting...</div>
+  <div id="status">Waiting for data...</div>
 
   <table>
     <tr>
@@ -584,90 +100,131 @@
     </tr>
   </table>
 
-  <canvas id="chartTurbidity"></canvas>
-  <canvas id="chartPH"></canvas>
-  <canvas id="chartTDS"></canvas>
-  <canvas id="chartTemp"></canvas>
+  <canvas id="chartTurbidity" height="120"></canvas>
+  <canvas id="chartPH" height="120"></canvas>
+  <canvas id="chartTDS" height="120"></canvas>
+  <canvas id="chartTemp" height="120"></canvas>
+
+  <footer>Updates every 2 seconds. Backend: <code>http://localhost:5000</code></footer>
 
   <script>
-    const labels = [];
+    const API_URL = 'http://127.0.0.1:5000';
+    const REFRESH_MS = 2000;
 
+    const chartOptions = {
+      animation: false,
+      responsive: true,
+      plugins: { legend: { display: true } },
+      scales: { y: { beginAtZero: true } }
+    };
+
+    const labels = [];
     const turbidityData = [];
     const phData = [];
     const tdsData = [];
     const tempData = [];
 
-    function pushData(arr, value) {
+    function push(arr, value) {
       arr.push(value);
       if (arr.length > 20) arr.shift();
     }
 
+    function getColor(param, value) {
+      if (param === 'turbidity') {
+        if (value <= 100) return '#2e7d32';
+        if (value <= 200) return '#f9a825';
+        return '#c62828';
+      }
+      if (param === 'ph') {
+        if (value >= 6.5 && value <= 8.5) return '#2e7d32';
+        if (value >= 6 && value <= 9) return '#f9a825';
+        return '#c62828';
+      }
+      if (param === 'tds') {
+        if (value <= 500) return '#2e7d32';
+        if (value <= 800) return '#f9a825';
+        return '#c62828';
+      }
+      if (param === 'temperature') {
+        if (value >= 20 && value <= 30) return '#2e7d32';
+        if (value <= 35) return '#f9a825';
+        return '#c62828';
+      }
+      return '#1976d2';
+    }
+
     const chartTurbidity = new Chart(document.getElementById('chartTurbidity'), {
       type: 'line',
-      data: { labels, datasets: [{ label: 'Turbidity', data: turbidityData }] }
+      data: { labels, datasets: [{ label: 'Turbidity (NTU)', data: turbidityData, borderColor: '#1976d2', fill: false }] },
+      options: chartOptions
     });
 
     const chartPH = new Chart(document.getElementById('chartPH'), {
       type: 'line',
-      data: { labels, datasets: [{ label: 'pH', data: phData }] }
+      data: { labels, datasets: [{ label: 'pH', data: phData, borderColor: '#1976d2', fill: false }] },
+      options: { ...chartOptions, scales: { ...chartOptions.scales, y: { min: 0, max: 14 } } }
     });
 
     const chartTDS = new Chart(document.getElementById('chartTDS'), {
       type: 'line',
-      data: { labels, datasets: [{ label: 'TDS', data: tdsData }] }
+      data: { labels, datasets: [{ label: 'TDS (ppm)', data: tdsData, borderColor: '#1976d2', fill: false }] },
+      options: chartOptions
     });
 
     const chartTemp = new Chart(document.getElementById('chartTemp'), {
       type: 'line',
-      data: { labels, datasets: [{ label: 'Temperature', data: tempData }] }
+      data: { labels, datasets: [{ label: 'Temperature (°C)', data: tempData, borderColor: '#1976d2', fill: false }] },
+      options: chartOptions
     });
+
+    function setStatus(text, safe) {
+      const statusEl = document.getElementById('status');
+      statusEl.textContent = text;
+      statusEl.className = safe === true ? 'safe' : safe === false ? 'unsafe' : '';
+    }
 
     async function fetchData() {
       try {
-        const res = await fetch('http://127.0.0.1:5000/data');
-        const data = await res.json();
+        const res = await fetch(`${API_URL}/data`);
+        const json = await res.json();
 
-        console.log(data);
+        const turbidity = parseFloat(json.turbidity) || 0;
+        const ph = parseFloat(json.ph) || 0;
+        const tds = parseFloat(json.tds) || 0;
+        const temperature = parseFloat(json.temperature) || 0;
 
-        let turbidity = parseFloat(data.turbidity) || 0;
-        let ph = parseFloat(data.ph) || 0;
-        let tds = parseFloat(data.tds) || 0;
-        let temperature = parseFloat(data.temperature) || 0;
+        document.getElementById('turbidity').textContent = turbidity.toFixed(1);
+        document.getElementById('ph').textContent = ph.toFixed(2);
+        document.getElementById('tds').textContent = tds.toFixed(1);
+        document.getElementById('temperature').textContent = temperature.toFixed(1);
 
-        document.getElementById('turbidity').innerText = turbidity.toFixed(1);
-        document.getElementById('ph').innerText = ph.toFixed(1);
-        document.getElementById('tds').innerText = tds.toFixed(1);
-        document.getElementById('temperature').innerText = temperature.toFixed(1);
+        const safe = ph >= 6.5 && ph <= 8.5;
+        setStatus(safe ? 'Water is Safe' : 'Water is Unsafe', safe);
 
-        let status = "Safe";
-        if (turbidity > 200 || ph < 6.5 || ph > 8.5 || tds > 800 || temperature > 35) {
-          status = "Unsafe";
-        }
+        push(labels, new Date().toLocaleTimeString());
+        push(turbidityData, turbidity);
+        push(phData, ph);
+        push(tdsData, tds);
+        push(tempData, temperature);
 
-        let statusDiv = document.getElementById('status');
-        statusDiv.innerText = "Water Status: " + status;
-        statusDiv.className = status === "Safe" ? "safe" : "unsafe";
-
-        pushData(labels, new Date().toLocaleTimeString());
-        pushData(turbidityData, turbidity);
-        pushData(phData, ph);
-        pushData(tdsData, tds);
-        pushData(tempData, temperature);
+        chartTurbidity.data.datasets[0].borderColor = getColor('turbidity', turbidity);
+        chartPH.data.datasets[0].borderColor = getColor('ph', ph);
+        chartTDS.data.datasets[0].borderColor = getColor('tds', tds);
+        chartTemp.data.datasets[0].borderColor = getColor('temperature', temperature);
 
         chartTurbidity.update();
         chartPH.update();
         chartTDS.update();
         chartTemp.update();
-
       } catch (err) {
         console.error(err);
-        document.getElementById('status').innerText = "Server Error";
+        setStatus('Cannot reach backend', null);
       }
     }
 
-    setInterval(fetchData, 2000);
+    setInterval(fetchData, REFRESH_MS);
+    fetchData();
   </script>
-
 </body>
 
 </html>
